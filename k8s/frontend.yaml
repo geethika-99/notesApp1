@@ -1,0 +1,44 @@
+# ──────────────────────────────────────────────────────────────
+# Frontend Deployment
+# Runs 2 replicas of nginx serving the HTML/CSS/JS frontend
+# ──────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    app: frontend
+spec:
+  replicas: 2       # ← Assignment requires at least 2 replicas
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: notesapp-frontend:latest  # built from frontend/Dockerfile
+          imagePullPolicy: Never           # use local Minikube image
+          ports:
+            - containerPort: 80
+
+---
+# ──────────────────────────────────────────────────────────────
+# Frontend Service
+# NodePort = accessible from your browser via Minikube IP
+# ──────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80            # port inside the cluster
+      targetPort: 80      # port nginx listens on
+      nodePort: 30300     # port you access from your browser
+  type: NodePort

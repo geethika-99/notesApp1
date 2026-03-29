@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+
+  # ── MongoDB Database ──────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    container_name: notes_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Express Backend ───────────────────────────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: notes_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      # 'mongo' here is the service name above — Docker resolves it automatically
+      MONGO_URI: mongodb://mongo:27017/notesdb
+      PORT: 5000
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # ── HTML Frontend (served by nginx) ──────────────────────────────────────
+  frontend:
+    image: nginx:alpine
+    container_name: notes_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+
+volumes:
+  mongo_data:

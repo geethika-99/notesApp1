@@ -1,0 +1,50 @@
+# ──────────────────────────────────────────────────────────────
+# Backend Deployment
+# Runs 2 replicas of the Express + Node.js backend
+# ──────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+spec:
+  replicas: 2       # ← Assignment requires at least 2 replicas
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: notesapp-backend:latest  # built from backend/Dockerfile
+          imagePullPolicy: Never          # use local Minikube image (not DockerHub)
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGO_URI
+              # 'mongo' matches the MongoDB Service name in mongo.yaml
+              value: "mongodb://mongo:27017/notesdb"
+            - name: PORT
+              value: "5000"
+
+---
+# ──────────────────────────────────────────────────────────────
+# Backend Service
+# NodePort = accessible from your browser via Minikube IP
+# ──────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 5000          # port inside the cluster
+      targetPort: 5000    # port the container listens on
+      nodePort: 30500     # port you access from your browser
+  type: NodePort
